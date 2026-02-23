@@ -43,8 +43,5 @@ const aiSessionSchema = new mongoose.Schema(
   }
 );
 
-/* ---------------- Indexes ---------------- */
-aiSessionSchema.index({ userId: 1, mode: 1 });
-aiSessionSchema.index({ created_at: -1 });
 
 export const AiSession = mongoose.model("AiSession", aiSessionSchema);

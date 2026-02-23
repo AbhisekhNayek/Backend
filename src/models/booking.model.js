@@ -80,26 +80,4 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-/* ---------------- Compound Indexes ---------------- */
-bookingSchema.index({
-  providerId: 1,
-  bookingDate: 1,
-  startTime: 1,
-  endTime: 1
-});
-
-/* ---------------- Validations ---------------- */
-bookingSchema.pre("save", function (next) {
-  if (this.startTime >= this.endTime) {
-    return next(new Error("startTime must be before endTime"));
-  }
-
-  // Nurse-only duration validation
-  if (this.bookingType === "NURSE" && !this.nurseDurationType) {
-    return next(new Error("nurseDurationType is required for nurse bookings"));
-  }
-
-  next();
-});
-
 export const Booking = mongoose.model("Booking", bookingSchema);

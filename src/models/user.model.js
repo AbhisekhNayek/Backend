@@ -2,20 +2,9 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    mobile: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      maxlength: 15,
-      index: true
-    },
-
-    isMobileVerified: {
-      type: Boolean,
-      enum: [true, false],
-      default: false
-    },
+    /* ===============================
+       BASIC INFO
+    =============================== */
 
     name: {
       type: String,
@@ -25,48 +14,118 @@ const userSchema = new mongoose.Schema(
 
     email: {
       type: String,
+      required: true,
+      unique: true,
       lowercase: true,
       trim: true,
-      maxlength: 100,
-      match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
-      sparse: true
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"]
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      match: [/^[0-9]{10,15}$/, "Invalid phone number"]
     },
 
     profilePic: {
-      type: String,
-      trim: true
+      type: String
     },
 
     gender: {
       type: String,
       enum: ["male", "female", "other"],
-      lowercase: true
+      required: true,
     },
 
     dob: {
-      type: Date
+      type: Date,
+      required: true
     },
 
-    location: {
-      latitude: {
-        type: Number
+    /* ===============================
+       AUTHENTICATION
+    =============================== */
+
+    password: {
+      type: String,
+      minlength: 6,
+      select: false
+    },
+
+    confirm_password: {
+      type: String,
+      minlength: 6,
+      select: false
+    },
+
+    role: {
+      type: String,
+      enum: ["PATIENT", "DOCTOR", "ADMIN"],
+      default: "PATIENT"
+    },
+
+    isEmailVerified: {
+      type: Boolean,
+      default: false
+    },
+
+    isPhoneVerified: {
+      type: Boolean,
+      default: false
+    },
+
+    /* ===============================
+       ADDRESS INFO
+    =============================== */
+
+    address: {
+      line1: String,
+      line2: String,
+      city: String,
+      state: String,
+      country: {
+        type: String,
+        default: "India"
       },
-      longitude: {
-        type: Number
-      }
+      pincode: String
     },
 
-    isLocationGranted: {
-      type: Number,
-      enum: [0, 1],
-      default: 0
+    /* ===============================
+       ACCOUNT STATUS
+    =============================== */
+
+    isBlocked: {
+      type: Boolean,
+      default: false
     },
 
     isDeleted: {
+      type: Boolean,
+      default: false
+    },
+
+    lastLoginAt: {
+      type: Date
+    },
+
+    /* ===============================
+       SECURITY TRACKING
+    =============================== */
+
+    loginAttempts: {
       type: Number,
-      enum: [0, 1],
-      default: 0,
-      index: true
+      default: 0
+    },
+
+    lockUntil: {
+      type: Date
+    },
+
+    refreshToken: {
+      type: String,
+      select: false
     }
   },
   {
@@ -74,15 +133,5 @@ const userSchema = new mongoose.Schema(
     versionKey: false
   }
 );
-
-/* ---------------- Indexes ---------------- */
-userSchema.index({ mobile: 1 });
-userSchema.index({ isDeleted: 1 });
-
-/* ---------------- Query Helpers ---------------- */
-userSchema.pre(/^find/, function (next) {
-  this.where({ isDeleted: 0 });
-  next();
-});
 
 export const User = mongoose.model("User", userSchema);

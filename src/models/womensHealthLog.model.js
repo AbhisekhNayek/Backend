@@ -32,17 +32,6 @@ const womensHealthLogSchema = new mongoose.Schema(
   }
 );
 
-/* ---------------- Indexes ---------------- */
-womensHealthLogSchema.index({ userId: 1, created_at: -1 });
-
-/* ---------------- Validations ---------------- */
-womensHealthLogSchema.pre("save", function (next) {
-  if (this.cycleStart >= this.cycleEnd) {
-    return next(new Error("cycleStart must be before cycleEnd"));
-  }
-  next();
-});
-
 export const WomensHealthLog = mongoose.model(
   "WomensHealthLog",
   womensHealthLogSchema
