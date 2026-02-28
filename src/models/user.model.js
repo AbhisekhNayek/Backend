@@ -54,12 +54,6 @@ const userSchema = new mongoose.Schema(
       select: false
     },
 
-    confirm_password: {
-      type: String,
-      minlength: 6,
-      select: false
-    },
-
     role: {
       type: String,
       enum: ["PATIENT", "DOCTOR", "ADMIN"],
