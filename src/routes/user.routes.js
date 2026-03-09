@@ -3,6 +3,7 @@ import {
   registerUser,
   verifyEmailOtp,
   loginUser,
+  getMyProfile,
   getAllUsers,
   getUserById,
   updateUser,
@@ -26,7 +27,7 @@ router.post("/login", loginUser);
 =============================== */
 
 /* Get logged-in user profile */
-router.get("/me", authMiddleware, getUserById);
+router.get("/me", authMiddleware, getMyProfile);
 
 /* ===============================
    ADMIN ONLY ROUTES
