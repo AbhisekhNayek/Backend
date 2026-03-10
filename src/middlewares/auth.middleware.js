@@ -17,3 +17,13 @@ export const authMiddleware = (req, res, next) => {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+export const adminOnly = (req, res, next) => {
+  if (req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Access denied"
+    });
+  }
+
+  next();
+};

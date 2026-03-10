@@ -10,118 +10,158 @@ const doctorSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       maxlength: 50,
-      index: true
+      index: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
     },
 
     password: {
       type: String,
       required: true,
       minlength: 8,
-      select: false
+      select: false,
     },
 
     isFirstLogin: {
       type: Number,
       enum: [0, 1],
-      default: 1
+      default: 1,
     },
+
+    /* ---------------- Profile ---------------- */
 
     name: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 50
+    },
+
+    profileImage: {
+      type: String,
+    },
+
+    bio: {
+      type: String,
     },
 
     specialization: {
       type: String,
       trim: true,
-      maxlength: 100
+      index: true,
+    },
+
+    qualifications: {
+      type: [String],
     },
 
     experience: {
       type: Number,
-      min: 0
+      min: 0,
     },
+
+    languages: {
+      type: [String],
+    },
+
+    /* ---------------- License ---------------- */
 
     licenseNo: {
       type: String,
       trim: true,
-      maxlength: 50,
-      index: true
-    },
-
-    fees: {
-      video: {
-        type: Number,
-        min: 0
-      },
-      clinic: {
-        type: Number,
-        min: 0
-      }
-    },
-
-    location: {
-      latitude: {
-        type: Number
-      },
-      longitude: {
-        type: Number
-      }
-    },
-
-    isOnline: {
-      type: Number,
-      enum: [0, 1],
-      default: 0,
-      index: true
+      index: true,
     },
 
     verificationStatus: {
       type: Number,
       enum: [0, 1, 2], // 0=PENDING,1=APPROVED,2=REJECTED
       default: 0,
-      index: true
+      index: true,
+    },
+
+    /* ---------------- Fees ---------------- */
+
+    fees: {
+      video: { type: Number, min: 0 },
+      clinic: { type: Number, min: 0 },
+    },
+
+    consultationMode: {
+      type: [String],
+      enum: ["VIDEO", "CLINIC"],
+    },
+
+    /* ---------------- Clinic ---------------- */
+
+    clinicName: {
+      type: String,
+    },
+
+    clinicAddress: {
+      type: String,
+    },
+
+    location: {
+      latitude: Number,
+      longitude: Number,
+    },
+
+    /* ---------------- Rating ---------------- */
+
+    rating: {
+      type: Number,
+      default: 0,
+    },
+
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
+
+    /* ---------------- Status ---------------- */
+
+    isOnline: {
+      type: Number,
+      enum: [0, 1],
+      default: 0,
     },
 
     isDeleted: {
       type: Number,
       enum: [0, 1],
       default: 0,
-      index: true
-    }
+      index: true,
+    },
   },
   {
-    timestamps: { createdAt: "created_at", updatedAt: false },
-    versionKey: false
-  }
+    timestamps: true,
+    versionKey: false,
+  },
 );
 
-/* ---------------- Indexes ---------------- */
-doctorSchema.index({ username: 1 });
-doctorSchema.index({ verificationStatus: 1 });
-doctorSchema.index({ isOnline: 1 });
-doctorSchema.index({ isDeleted: 1 });
+/* ---------------- Password Hash ---------------- */
 
-/* ---------------- Password Hashing ---------------- */
-doctorSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+doctorSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
-/* ---------------- Instance Methods ---------------- */
+/* ---------------- Compare Password ---------------- */
+
 doctorSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
-
-/* ---------------- Query Middleware (Soft Delete) ---------------- */
-doctorSchema.pre(/^find/, function (next) {
-  this.where({ isDeleted: 0 });
-  next();
-});
 
 export const Doctor = mongoose.model("Doctor", doctorSchema);

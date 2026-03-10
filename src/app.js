@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import healthRoutes from "./routes/health.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import doctorRoutes from "./routes/doctor.routes.js";
 
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -25,6 +26,7 @@ app.use(morgan("dev"));
 
 app.use("/api/health", healthRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/doctors", doctorRoutes);
 
 /* ===============================
    404 HANDLER
