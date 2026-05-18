@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field, model_validator
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -14,7 +14,7 @@ class Payment(MongoBaseModel):
     paymentMode: str = Field(..., description="UPI, CARD, NET_BANKING, WALLET, CASH")
     gatewayRef: Optional[str] = Field(default=None, max_length=100)
     status: str = Field(default="PENDING", description="SUCCESS, FAILED, PENDING")
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @model_validator(mode="after")
     def validate_amounts(self) -> 'Payment':

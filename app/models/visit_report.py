@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -19,5 +19,5 @@ class VisitReport(MongoBaseModel):
     chiefComplaints: Optional[str] = None
     diagnosis: Optional[str] = None
     observations: Optional[str] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))

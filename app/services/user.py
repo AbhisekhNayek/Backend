@@ -1,5 +1,5 @@
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 from bson import ObjectId
 
@@ -22,11 +22,11 @@ class UserService:
             try:
                 dob = datetime.fromisoformat(dob_raw.replace("Z", "+00:00"))
             except ValueError:
-                dob = datetime.utcnow()
+                dob = datetime.now(timezone.utc)
         elif isinstance(dob_raw, datetime):
             dob = dob_raw
         else:
-            dob = datetime.utcnow()
+            dob = datetime.now(timezone.utc)
 
         existing = await db.users.find_one({"email": email})
         if existing:
@@ -48,8 +48,8 @@ class UserService:
             "isPhoneVerified": False,
             "isBlocked": False,
             "isDeleted": False,
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
             "address": {
                 "line1": None,
                 "line2": None,
@@ -74,7 +74,7 @@ class UserService:
 
     async def verify_otp(self, email: str, otp: str) -> Dict[str, Any]:
         record = await db.otps.find_one({"email": email, "otp": otp})
-        if not record or record.get("expiresAt") < datetime.utcnow():
+        if not record or record.get("expiresAt") < datetime.now(timezone.utc):
             raise ValueError("Invalid or expired OTP")
 
         await db.users.update_one({"email": email}, {"$set": {"isEmailVerified": True}})
@@ -95,7 +95,7 @@ class UserService:
 
         await db.users.update_one(
             {"_id": user["_id"]},
-            {"$set": {"lastLoginAt": datetime.utcnow()}}
+            {"$set": {"lastLoginAt": datetime.now(timezone.utc)}}
         )
 
         return {"success": True, "token": token}

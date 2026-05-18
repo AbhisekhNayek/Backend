@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from app.database import db
 
 def generate_otp() -> str:
@@ -10,13 +10,13 @@ async def save_otp(identifier: str, otp: str, is_email: bool = True):
     # Delete any existing OTP for this identifier
     await db.otps.delete_many({key: identifier})
     
-    expires_at = datetime.utcnow() + timedelta(minutes=5)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
     otp_doc = {
         key: identifier,
         "otp": otp,
         "expiresAt": expires_at,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
     }
     await db.otps.insert_one(otp_doc)
     return otp_doc
@@ -29,7 +29,7 @@ async def verify_otp(identifier: str, otp: str, is_email: bool = True) -> bool:
     
     # Check expiry
     expires_at = record.get("expiresAt")
-    if expires_at and datetime.utcnow() > expires_at:
+    if expires_at and datetime.now(timezone.utc) > expires_at:
         await db.otps.delete_one({"_id": record["_id"]})
         return False
         

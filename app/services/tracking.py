@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from bson import ObjectId
 
@@ -7,7 +7,7 @@ from app.services.socket import socket_service
 
 class TrackingService:
     async def update_location(self, user_id: str, latitude: float, longitude: float) -> Dict[str, Any]:
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         location_data = {
             "location.latitude": latitude,
             "location.longitude": longitude,

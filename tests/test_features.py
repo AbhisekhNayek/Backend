@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 import copy
 import uuid
@@ -406,7 +406,7 @@ def test_admin_logistics_and_commissions():
         "userEmail": "user@docton.com",
         "status": "PENDING",
         "remarks": None,
-        "triggeredAt": datetime.utcnow()
+        "triggeredAt": datetime.now(timezone.utc)
     }
     mock_db.care_packages.docs.append(pkg_doc)
 

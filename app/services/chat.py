@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -28,8 +28,8 @@ class ChatService:
             "attachments": attachments or [],
             "isRead": False,
             "chatType": "DOCTOR_PATIENT",
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc)
         }
 
         await db.messages.insert_one(msg_doc)

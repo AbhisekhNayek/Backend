@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -53,7 +53,7 @@ async def create_prescription(payload: CreatePrescriptionRequest, current_user: 
             "medications": [med.model_dump() for med in payload.medications],
             "advice": payload.advice,
             "nextFollowUp": payload.nextFollowUp,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
 
         await db.prescriptions.insert_one(prescription_doc)
@@ -92,11 +92,11 @@ async def get_prescription_pdf_endpoint(id: str, current_user: Dict[str, Any] = 
         if patient and patient.get("dob"):
             dob = patient["dob"]
             if isinstance(dob, datetime):
-                patient_age = str(datetime.utcnow().year - dob.year)
+                patient_age = str(datetime.now(timezone.utc).year - dob.year)
             elif isinstance(dob, str):
                 try:
                     dob_dt = datetime.fromisoformat(dob.replace("Z", "+00:00"))
-                    patient_age = str(datetime.utcnow().year - dob_dt.year)
+                    patient_age = str(datetime.now(timezone.utc).year - dob_dt.year)
                 except ValueError:
                     pass
 
@@ -141,7 +141,7 @@ async def create_visit_report(payload: CreateVisitReportRequest, current_user: D
             "chiefComplaints": payload.chiefComplaints,
             "diagnosis": payload.diagnosis,
             "observations": payload.observations,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
 
         await db.visit_reports.insert_one(report_doc)

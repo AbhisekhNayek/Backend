@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, status
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 import json
 from bson import ObjectId
@@ -68,8 +68,8 @@ async def general_chat(payload: AIChatRequest, current_user: Dict[str, Any] = De
             "userId": user_id,
             "sessionType": "GENERAL_CHAT",
             "history": [],
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc)
         }
         res = await db.ai_sessions.insert_one(session_doc)
         session_id = str(res.inserted_id)
@@ -123,14 +123,14 @@ async def general_chat(payload: AIChatRequest, current_user: Dict[str, Any] = De
 
     # 3. Save to history
     new_history = session.get("history", [])
-    new_history.append({"role": "user", "content": message, "timestamp": datetime.utcnow()})
-    new_history.append({"role": "model", "content": ai_response, "timestamp": datetime.utcnow()})
+    new_history.append({"role": "user", "content": message, "timestamp": datetime.now(timezone.utc)})
+    new_history.append({"role": "model", "content": ai_response, "timestamp": datetime.now(timezone.utc)})
     
     await db.ai_sessions.update_one(
         {"_id": ObjectId(session_id)},
         {"$set": {
             "history": new_history,
-            "updatedAt": datetime.utcnow()
+            "updatedAt": datetime.now(timezone.utc)
         }}
     )
 
@@ -304,8 +304,8 @@ async def pink_chat(payload: PinkChatRequest, current_user: Dict[str, Any] = Dep
             "userId": user_id,
             "sessionType": "PINK_MODE",
             "history": [],
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc)
         }
         res = await db.ai_sessions.insert_one(session_doc)
         session_id = str(res.inserted_id)
@@ -366,14 +366,14 @@ async def pink_chat(payload: PinkChatRequest, current_user: Dict[str, Any] = Dep
 
     # Save to history
     new_history = session.get("history", [])
-    new_history.append({"role": "user", "content": message, "timestamp": datetime.utcnow()})
-    new_history.append({"role": "model", "content": ai_response, "timestamp": datetime.utcnow()})
+    new_history.append({"role": "user", "content": message, "timestamp": datetime.now(timezone.utc)})
+    new_history.append({"role": "model", "content": ai_response, "timestamp": datetime.now(timezone.utc)})
     
     await db.ai_sessions.update_one(
         {"_id": ObjectId(session_id)},
         {"$set": {
             "history": new_history,
-            "updatedAt": datetime.utcnow()
+            "updatedAt": datetime.now(timezone.utc)
         }}
     )
 

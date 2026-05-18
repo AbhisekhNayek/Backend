@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -17,5 +17,5 @@ class Prescription(MongoBaseModel):
     medications: List[Medication] = Field(default_factory=list)
     advice: Optional[str] = None
     nextFollowUp: Optional[datetime] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))

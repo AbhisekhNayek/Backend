@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -50,7 +50,7 @@ async def ship_care_package(
             {"_id": ObjectId(id)},
             {"$set": {
                 "status": "SHIPPED",
-                "shippedAt": datetime.utcnow(),
+                "shippedAt": datetime.now(timezone.utc),
                 "remarks": payload.remarks
             }}
         )

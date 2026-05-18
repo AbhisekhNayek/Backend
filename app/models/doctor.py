@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field
 from app.models.base import MongoBaseModel
 
@@ -38,5 +38,5 @@ class Doctor(MongoBaseModel):
     totalReviews: int = 0
     isOnline: int = Field(default=0, description="0=OFFLINE, 1=ONLINE")
     isDeleted: int = Field(default=0, description="0=ACTIVE, 1=DELETED")
-    createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updatedAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    createdAt: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updatedAt: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))

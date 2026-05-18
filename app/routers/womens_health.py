@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 import uuid
 
@@ -44,7 +44,7 @@ async def log_cycle(payload: CycleLogRequest, current_user: Dict[str, Any] = Dep
         "endDate": end_date,
         "cycleLength": (end_date - start_date).days,
         "notes": payload.notes,
-        "createdAt": datetime.utcnow()
+        "createdAt": datetime.now(timezone.utc)
     }
     log_res = await db.womens_health_logs.insert_one(cycle_log)
     log_id = str(log_res.inserted_id)
@@ -69,7 +69,7 @@ async def log_cycle(payload: CycleLogRequest, current_user: Dict[str, Any] = Dep
             "status": "PENDING",
             "cycleLogId": log_id,
             "shippingAddress": shipping_addr,
-            "triggeredAt": datetime.utcnow(),
+            "triggeredAt": datetime.now(timezone.utc),
             "remarks": "First log campaign eligibility qualified."
         }
         await db.care_packages.insert_one(care_package_doc)
@@ -78,10 +78,10 @@ async def log_cycle(payload: CycleLogRequest, current_user: Dict[str, Any] = Dep
         subscription_doc = {
             "userId": user_id,
             "status": "ACTIVE",
-            "startDate": datetime.utcnow(),
+            "startDate": datetime.now(timezone.utc),
             "isFreePackageTriggered": True,
             "paymentMandateSetup": False,
-            "createdAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc)
         }
         await db.subscriptions.insert_one(subscription_doc)
         
@@ -137,13 +137,13 @@ async def register_auto_pay(payload: AutoPayRequest, current_user: Dict[str, Any
         await db.subscriptions.insert_one({
             "userId": user_id,
             "status": "ACTIVE",
-            "startDate": datetime.utcnow(),
+            "startDate": datetime.now(timezone.utc),
             "isFreePackageTriggered": False,
             "paymentMandateSetup": True,
             "paymentProvider": provider,
             "mandateId": mandate_id,
             "mandateLimit": payload.mandateLimit,
-            "createdAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc)
         })
 
     return {

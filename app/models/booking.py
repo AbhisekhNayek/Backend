@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field, field_validator
 import re
 from app.models.base import MongoBaseModel, PyObjectId
@@ -17,7 +17,7 @@ class Booking(MongoBaseModel):
     nurseDurationValue: Optional[int] = Field(default=None, ge=1)
     status: str = Field(default="PENDING", description="PENDING, CONFIRMED, COMPLETED, CANCELLED")
     chatEnabledAt: Optional[datetime] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("startTime", "endTime")
     @classmethod

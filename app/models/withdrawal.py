@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field, BaseModel
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -17,5 +17,5 @@ class Withdrawal(MongoBaseModel):
     bankDetails: BankDetails = Field(default_factory=BankDetails)
     transactionId: Optional[str] = None
     remarks: Optional[str] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 import math
 import uuid
@@ -170,7 +170,7 @@ async def update_availability(
         # Build update set
         update_set = {
             "isOnline": payload.isOnline,
-            "updatedAt": datetime.utcnow()
+            "updatedAt": datetime.now(timezone.utc)
         }
         if payload.clinicHours is not None:
             update_set["clinicHours"] = [slot.model_dump() for slot in payload.clinicHours]

@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field, model_validator
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -10,7 +10,7 @@ class ProviderVerification(MongoBaseModel):
     status: str = Field(default="PENDING", description="PENDING, APPROVED, REJECTED")
     adminId: Optional[PyObjectId] = None
     remarks: Optional[str] = None
-    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @model_validator(mode="after")
     def validate_admin_id(self) -> 'ProviderVerification':

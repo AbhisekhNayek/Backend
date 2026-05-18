@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from app.database import db
@@ -49,7 +49,7 @@ async def quick_fill_onboarding(payload: QuickFillRequest):
     try:
         dob = datetime.fromisoformat(dob_raw.replace("Z", "+00:00"))
     except ValueError:
-        dob = datetime.utcnow()
+        dob = datetime.now(timezone.utc)
 
     # 2. Check if a user with that email already exists
     user = await db.users.find_one({"email": mock_email})
@@ -68,8 +68,8 @@ async def quick_fill_onboarding(payload: QuickFillRequest):
             "isPhoneVerified": True,
             "isBlocked": False,
             "isDeleted": False,
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
             "address": {
                 "line1": None,
                 "line2": None,

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -42,7 +42,7 @@ async def get_banners(admin: Dict[str, Any] = Depends(admin_only)):
 async def create_banner(payload: BannerRequest, admin: Dict[str, Any] = Depends(admin_only)):
     try:
         banner_doc = payload.model_dump()
-        banner_doc["created_at"] = datetime.utcnow()
+        banner_doc["created_at"] = datetime.now(timezone.utc)
         await db.banners.insert_one(banner_doc)
         banner_doc["_id"] = str(banner_doc["_id"])
         banner_doc["created_at"] = banner_doc["created_at"].isoformat()
@@ -83,7 +83,7 @@ async def update_config(payload: ConfigRequest, admin: Dict[str, Any] = Depends(
             {"key": payload.key},
             {"$set": {
                 "value": payload.value,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }},
             upsert=True,
             return_document=True
@@ -100,7 +100,7 @@ async def update_config(payload: ConfigRequest, admin: Dict[str, Any] = Depends(
 @router.get("/announcements")
 async def get_announcements(admin: Dict[str, Any] = Depends(admin_only)):
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # Find announcements that have not expired
         cursor = db.announcements.find({
             "$or": [
@@ -126,7 +126,7 @@ async def get_announcements(admin: Dict[str, Any] = Depends(admin_only)):
 async def create_announcement(payload: AnnouncementRequest, admin: Dict[str, Any] = Depends(admin_only)):
     try:
         ann_doc = payload.model_dump()
-        ann_doc["created_at"] = datetime.utcnow()
+        ann_doc["created_at"] = datetime.now(timezone.utc)
         if ann_doc.get("expiresAt"):
             try:
                 ann_doc["expiresAt"] = datetime.fromisoformat(ann_doc["expiresAt"].replace("Z", "+00:00"))

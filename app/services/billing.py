@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from bson import ObjectId
 
@@ -36,7 +36,7 @@ class BillingService:
             "providerAmount": provider_amount,
             "paymentMode": payment_mode,
             "status": "SUCCESS",
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
 
         await db.payments.insert_one(payment_doc)

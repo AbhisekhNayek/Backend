@@ -1,6 +1,6 @@
 import socketio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from app.utils.jwt import verify_token
 
@@ -67,7 +67,7 @@ async def update_location(sid, data):
         broadcast_payload = {
             **data,
             "userId": user_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await sio.emit("live_location_update", broadcast_payload, room="live-tracking")
         logger.debug(f"[SOCKET] Location updated for user: {user_id}")

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import Field
 from app.models.base import MongoBaseModel, PyObjectId
 
@@ -15,8 +15,8 @@ class Message(MongoBaseModel):
     attachments: List[Attachment] = Field(default_factory=list)
     isRead: bool = False
     chatType: str = "DOCTOR_PATIENT"
-    createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updatedAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    createdAt: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updatedAt: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 ModelConfig = {
     "populate_by_name": True,
     "arbitrary_types_allowed": True

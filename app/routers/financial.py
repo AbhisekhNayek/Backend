@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -120,8 +120,8 @@ async def withdraw(payload: RequestWithdrawalRequest, current_user: Dict[str, An
             "amount": payload.amount,
             "status": "PENDING",
             "bankDetails": payload.bankDetails.model_dump(),
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
 
         await db.withdrawals.insert_one(withdrawal_doc)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, status
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.database import db
@@ -53,7 +53,7 @@ async def submit_verification(
             "status": "PENDING",
             "adminId": None,
             "remarks": None,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
         await db.provider_verifications.insert_one(verification_doc)
 
@@ -126,7 +126,7 @@ async def update_verification_status(
                 "status": status_upper,
                 "remarks": payload.remarks,
                 "adminId": ObjectId(admin["id"]),
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }}
         )
 
