@@ -5,15 +5,17 @@ from datetime import datetime, timezone
 import re
 import json
 from bson import ObjectId
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.database import db
 from app.middlewares.auth import get_current_user
 from app.config import settings
 
 # Initialize Gemini GenAI Client
+client_ai = None
 if settings.gemini_api_key:
-    genai.configure(api_key=settings.gemini_api_key)
+    client_ai = genai.Client(api_key=settings.gemini_api_key)
 
 router = APIRouter(prefix="/api/ai", tags=["AI Hub"])
 
@@ -81,13 +83,18 @@ async def general_chat(payload: AIChatRequest, current_user: Dict[str, Any] = De
     rec_card = check_symptoms(message)
     ai_response = None
     
-    if settings.gemini_api_key:
+    if client_ai:
         try:
             # Build conversation history context
             formatted_history = []
             for h in session.get("history", []):
                 role = "user" if h["role"] == "user" else "model"
-                formatted_history.append({"role": role, "parts": [h["content"]]})
+                formatted_history.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part(text=h["content"])]
+                    )
+                )
             
             system_instruction = (
                 "You are a helpful, professional, and empathetic AI Medical Chatbot for an app called Docton. "
@@ -97,12 +104,13 @@ async def general_chat(payload: AIChatRequest, current_user: Dict[str, Any] = De
                 "a specialist consult, a doctor recommendation card will be presented to them."
             )
             
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=system_instruction
+            chat = client_ai.chats.create(
+                model="gemini-1.5-flash",
+                history=formatted_history,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction
+                )
             )
-            
-            chat = model.start_chat(history=formatted_history)
             response = chat.send_message(message)
             ai_response = response.text.strip()
         except Exception:
@@ -157,7 +165,7 @@ async def analyze_report(
         otc_medicines = []
         ai_explanation = ""
         
-        if settings.gemini_api_key:
+        if client_ai:
             try:
                 mime_type = file.content_type
                 if not mime_type or mime_type == "application/octet-stream":
@@ -190,24 +198,25 @@ async def analyze_report(
                     "Do not include any markdown backticks or any other text before/after the JSON. Just return raw JSON."
                 )
                 
-                model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
-                    system_instruction=system_instruction
-                )
-                
                 if mime_type.startswith("text/") or filename.endswith(".txt") or filename.endswith(".csv"):
                     text_content = file_content.decode("utf-8", errors="ignore")
                     contents = [f"Please analyze this report content: \n\n{text_content}"]
                 else:
                     contents = [
-                        {
-                            "mime_type": mime_type,
-                            "data": file_content
-                        },
+                        types.Part.from_bytes(
+                            data=file_content,
+                            mime_type=mime_type
+                        ),
                         "Please perform OCR and analyze this uploaded medical report file."
                     ]
                 
-                response = model.generate_content(contents)
+                response = client_ai.models.generate_content(
+                    model="gemini-1.5-flash",
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction
+                    )
+                )
                 resp_text = response.text.strip()
                 
                 if resp_text.startswith("```json"):
@@ -320,13 +329,18 @@ async def pink_chat(payload: PinkChatRequest, current_user: Dict[str, Any] = Dep
     # Female-centric empathetic helper responses / Gemini Live API response
     ai_response = None
     
-    if settings.gemini_api_key:
+    if client_ai:
         try:
             # Build conversation history context
             formatted_history = []
             for h in session.get("history", []):
                 role = "user" if h["role"] == "user" else "model"
-                formatted_history.append({"role": role, "parts": [h["content"]]})
+                formatted_history.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part(text=h["content"])]
+                    )
+                )
             
             system_instruction = (
                 "You are a highly empathetic, professional, and helpful AI reproductive health assistant for the Docton app (running in 'Pink Mode'). "
@@ -335,12 +349,13 @@ async def pink_chat(payload: PinkChatRequest, current_user: Dict[str, Any] = Dep
                 "containing organic sanitary pads, warm cramp patches, and wellness tea when they log their first cycle on the tracker."
             )
             
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=system_instruction
+            chat = client_ai.chats.create(
+                model="gemini-1.5-flash",
+                history=formatted_history,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction
+                )
             )
-            
-            chat = model.start_chat(history=formatted_history)
             response = chat.send_message(message)
             ai_response = response.text.strip()
         except Exception:
