@@ -283,8 +283,12 @@ async def analyze_report(
             "otcSuggestions": otc_medicines,
             "recommendedSpecialist": specialist
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/pink-chat")
 async def pink_chat(payload: PinkChatRequest, current_user: Dict[str, Any] = Depends(get_current_user)):

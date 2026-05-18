@@ -12,12 +12,24 @@ class MockCollection:
         self.name = name
         self.docs = []
 
+    def _get_nested(self, doc, key):
+        if "." in key:
+            parts = key.split(".")
+            temp = doc
+            for p in parts:
+                if isinstance(temp, dict):
+                    temp = temp.get(p)
+                else:
+                    return None
+            return temp
+        return doc.get(key)
+
     async def find_one(self, query):
         for doc in self.docs:
             match = True
             for k, v in query.items():
                 # Support string representation matching for ObjectId
-                doc_val = doc.get(k)
+                doc_val = self._get_nested(doc, k)
                 if isinstance(doc_val, ObjectId) and isinstance(v, str):
                     doc_val = str(doc_val)
                 elif isinstance(doc_val, str) and isinstance(v, ObjectId):
@@ -35,7 +47,6 @@ class MockCollection:
         return None
 
     def find(self, query=None, projection=None):
-        cursor = MagicMock()
         filtered = []
         for doc in self.docs:
             if not query:
@@ -43,7 +54,7 @@ class MockCollection:
                 continue
             match = True
             for k, v in query.items():
-                doc_val = doc.get(k)
+                doc_val = self._get_nested(doc, k)
                 if isinstance(doc_val, ObjectId) and isinstance(v, str):
                     doc_val = str(doc_val)
                 elif isinstance(doc_val, str) and isinstance(v, ObjectId):
@@ -60,13 +71,22 @@ class MockCollection:
             if match:
                 filtered.append(doc)
 
-        mock_sort = MagicMock()
-        async def to_list(length=None):
-            return [copy.deepcopy(d) for d in filtered]
-        mock_sort.to_list = to_list
-        cursor.sort = MagicMock(return_value=mock_sort)
-        cursor.to_list = to_list
-        return cursor
+        class MockCursor:
+            def __init__(self, items):
+                self.items = items
+            def sort(self, *args, **kwargs):
+                return self
+            def limit(self, *args, **kwargs):
+                return self
+            def skip(self, *args, **kwargs):
+                return self
+            async def to_list(self, length=None):
+                res = [copy.deepcopy(d) for d in self.items]
+                if length is not None:
+                    res = res[:length]
+                return res
+
+        return MockCursor(filtered)
 
     async def insert_one(self, doc):
         if "_id" not in doc:
@@ -90,7 +110,7 @@ class MockCollection:
         for doc in self.docs:
             match = True
             for k, v in query.items():
-                doc_val = doc.get(k)
+                doc_val = self._get_nested(doc, k)
                 if isinstance(doc_val, ObjectId) and isinstance(v, str):
                     doc_val = str(doc_val)
                 elif isinstance(doc_val, str) and isinstance(v, ObjectId):
@@ -114,7 +134,7 @@ class MockCollection:
         for doc in self.docs:
             match = True
             for k, v in query.items():
-                doc_val = doc.get(k)
+                doc_val = self._get_nested(doc, k)
                 if isinstance(doc_val, ObjectId) and isinstance(v, str):
                     doc_val = str(doc_val)
                 elif isinstance(doc_val, str) and isinstance(v, ObjectId):
@@ -149,6 +169,8 @@ class MockDatabase:
         self.womens_health_logs = MockCollection("womens_health_logs")
         self.subscriptions = MockCollection("subscriptions")
         self.ai_sessions = MockCollection("ai_sessions")
+        self.activity_logs = MockCollection("activity_logs")
+        self.location_history = MockCollection("location_history")
 
 # Override client and database in app
 import app.database
@@ -160,6 +182,8 @@ import app.routers.womens_health
 import app.routers.admin_dashboard
 import app.routers.doctors
 import app.routers.quick_fill
+import app.services.tracking
+import app.routers.tracking
 
 mock_db = MockDatabase()
 
@@ -173,6 +197,8 @@ app.routers.womens_health.db = mock_db
 app.routers.admin_dashboard.db = mock_db
 app.routers.doctors.db = mock_db
 app.routers.quick_fill.db = mock_db
+app.services.tracking.db = mock_db
+app.routers.tracking.db = mock_db
 
 # Patch admin ping command
 app.database.client = MagicMock()
@@ -191,6 +217,7 @@ MOCK_ADMIN_ID = "6648cb92bc0a41d2fcd1b9a2"
 async def override_get_current_user():
     return {
         "id": MOCK_USER_ID,
+        "userId": MOCK_USER_ID,
         "email": "user@docton.com",
         "role": "PATIENT",
         "fullName": "Test Patient"
@@ -199,6 +226,7 @@ async def override_get_current_user():
 async def override_get_current_doctor():
     return {
         "id": MOCK_USER_ID,
+        "userId": MOCK_USER_ID,
         "email": "doctor@docton.com",
         "role": "DOCTOR",
         "fullName": "Dr. Test MD"
@@ -207,6 +235,7 @@ async def override_get_current_doctor():
 async def override_admin_only():
     return {
         "id": MOCK_ADMIN_ID,
+        "userId": MOCK_ADMIN_ID,
         "email": "admin@docton.com",
         "role": "ADMIN",
         "fullName": "Test Admin"
@@ -440,3 +469,74 @@ def test_admin_logistics_and_commissions():
     comm_data = response_commission.json()
     assert comm_data["success"] is True
     assert comm_data["stats"]["totalCommissionsCollected"] == 1.00 # Nominal ₹1 platform fee split successfully!
+
+
+# ==================== CCTV & COMPREHENSIVE TRACKING ====================
+def test_cctv_and_historical_tracking():
+    # 1. Populating mock database for tracking test
+    mock_db.users.docs = [{
+        "_id": ObjectId(MOCK_USER_ID),
+        "name": "CCTV User",
+        "location": {"latitude": 12.9716, "longitude": 77.5945},
+        "lastLocationAt": datetime.now(timezone.utc),
+        "role": "PATIENT"
+    }]
+    mock_db.doctors.docs = [{
+        "_id": ObjectId(),
+        "name": "CCTV Doctor",
+        "location": {"latitude": 12.9800, "longitude": 77.6000},
+        "lastLocationAt": datetime.now(timezone.utc),
+        "isOnline": 1,
+        "role": "DOCTOR"
+    }]
+    mock_db.nurses.docs = [{
+        "_id": ObjectId(),
+        "name": "CCTV Nurse",
+        "location": {"latitude": 12.9900, "longitude": 77.6100},
+        "lastLocationAt": datetime.now(timezone.utc),
+        "isOnline": 1,
+        "role": "NURSE"
+    }]
+    mock_db.location_history.docs = [{
+        "_id": ObjectId(),
+        "userId": MOCK_USER_ID,
+        "role": "PATIENT",
+        "latitude": 12.9716,
+        "longitude": 77.5945,
+        "timestamp": datetime.now(timezone.utc)
+    }]
+    mock_db.activity_logs.docs = [{
+        "_id": ObjectId(),
+        "userId": MOCK_USER_ID,
+        "role": "PATIENT",
+        "action": "LOGIN",
+        "details": "User logged in",
+        "timestamp": datetime.now(timezone.utc)
+    }]
+
+    # 2. Query active locations including nurses
+    response_live = client.get("/api/tracking/admin/live")
+    assert response_live.status_code == 200
+    live_data = response_live.json()
+    assert live_data["success"] is True
+    assert len(live_data["users"]) == 1
+    assert len(live_data["doctors"]) == 1
+    assert len(live_data["nurses"]) == 1
+    assert live_data["count"] == 3
+
+    # 3. Query historical location breadcrumbs
+    response_hist = client.get(f"/api/tracking/admin/history/{MOCK_USER_ID}")
+    assert response_hist.status_code == 200
+    hist_data = response_hist.json()
+    assert hist_data["success"] is True
+    assert len(hist_data["history"]) == 1
+    assert hist_data["history"][0]["userId"] == MOCK_USER_ID
+
+    # 4. Query recent system activities
+    response_act = client.get("/api/tracking/admin/activities")
+    assert response_act.status_code == 200
+    act_data = response_act.json()
+    assert act_data["success"] is True
+    assert len(act_data["activities"]) == 1
+    assert act_data["activities"][0]["action"] == "LOGIN"
+

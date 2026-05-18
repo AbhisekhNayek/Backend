@@ -25,8 +25,12 @@ async def get_revenue(admin: Dict[str, Any] = Depends(admin_only)):
         cursor = db.payments.aggregate(pipeline)
         stats = await cursor.to_list(length=1000)
         return {"success": True, "data": stats}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/growth")
 async def get_growth(admin: Dict[str, Any] = Depends(admin_only)):
@@ -64,8 +68,12 @@ async def get_growth(admin: Dict[str, Any] = Depends(admin_only)):
                 "doctors": doctor_stats
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/heatmap")
 async def get_heatmap(admin: Dict[str, Any] = Depends(admin_only)):
@@ -97,5 +105,10 @@ async def get_heatmap(admin: Dict[str, Any] = Depends(admin_only)):
                 })
 
         return {"success": True, "data": heatmap_data}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

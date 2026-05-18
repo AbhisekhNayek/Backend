@@ -64,8 +64,12 @@ async def submit_verification(
         }
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/pending")
 async def get_pending_verifications(admin: Dict[str, Any] = Depends(admin_only)):
@@ -100,8 +104,12 @@ async def get_pending_verifications(admin: Dict[str, Any] = Depends(admin_only))
             "success": True,
             "data": populated_verifications
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.patch("/status/{id}")
 async def update_verification_status(
@@ -143,5 +151,10 @@ async def update_verification_status(
         }
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

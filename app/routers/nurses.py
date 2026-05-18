@@ -91,8 +91,12 @@ async def get_nurses(
             "count": len(populated_nurses),
             "nurses": populated_nurses
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/{id}")
 async def get_nurse_by_id(id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -113,5 +117,10 @@ async def get_nurse_by_id(id: str, current_user: Dict[str, Any] = Depends(get_cu
         }
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

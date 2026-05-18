@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import settings
+from app.logger import logger
 
 # Async MongoDB client setup
 client = AsyncIOMotorClient(settings.mongo_uri)
@@ -10,9 +11,8 @@ db = client.get_default_database()
 async def connect_db():
     try:
         # Ping database to verify connection
-        await client.admin.command('ping')
-        print(f"[OK] MongoDB Connected: {client.nodes}")
+        db = client[settings.mongo_db_name]
+        logger.info(f"MongoDB Connected: {client.nodes}")
     except Exception as e:
-        print(f"[ERROR] MongoDB Connection Failed: {e}")
+        logger.error(f"MongoDB Connection Failed: {e}")
         raise e
-

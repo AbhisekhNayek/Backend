@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     port: int = 8000
     node_env: str = "development"
     mongo_uri: str
+    mongo_db_name: str
+    
+    allowed_origins: str = "*"
+
     jwt_secret: str
     
     smtp_host: str
@@ -31,6 +35,9 @@ class Settings(BaseSettings):
     cometchat_auth_key: str
     cometchat_rest_api_key: str
     cometchat_region: str = "in"
+
+    google_places_api_key: str | None = None
+    google_maps_api_secret: str | None = None
 
     # Pydantic settings config to load .env variables
     model_config = SettingsConfigDict(

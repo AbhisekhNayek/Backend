@@ -60,7 +60,7 @@ def test_zegocloud_webhook_valid_signature(mock_db):
     )
     
     assert response.status_code == 200
-    assert response.json()["success"] is True
+    assert response.json()["message"] == "success"
     mock_update.assert_called_once()
 
 @patch("app.routers.video.settings.zego_callback_secret", "dummy_callback_secret_32_chars_!")

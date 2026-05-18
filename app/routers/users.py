@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 from app.services.user import user_service
+from app.services.tracking import tracking_service
 from app.middlewares.auth import get_current_user, admin_only
 from app.database import db
 
@@ -45,6 +46,16 @@ async def verify_otp(payload: OTPVerifyRequest):
 async def login(payload: UserLoginRequest):
     try:
         res = await user_service.login(payload.email, payload.password)
+        
+        # Log activity
+        if res and res.get("user") and res.get("user").get("id"):
+            await tracking_service.log_activity(
+                user_id=res["user"]["id"],
+                role=res["user"].get("role", "USER"),
+                action="LOGIN",
+                details="User logged in"
+            )
+            
         return res
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
@@ -91,5 +102,10 @@ async def get_all_users(
             "count": len(users),
             "data": users
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

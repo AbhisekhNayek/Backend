@@ -49,6 +49,20 @@ async def connect(sid, environ, auth=None):
         # Join target and unified rooms
         await sio.enter_room(sid, f"user-{user_id}")
         await sio.enter_room(sid, "live-tracking")
+        
+        # Check if Admin to join CCTV room
+        role = payload.get("role", "UNKNOWN")
+        if role == "ADMIN":
+            await sio.enter_room(sid, "admin-cctv")
+            logger.info(f"[SOCKET] Admin connected to CCTV room: {user_id} (SID: {sid})")
+        else:
+            # Broadcast user connection to CCTV room
+            await sio.emit("user_connected", {
+                "userId": user_id,
+                "role": role,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }, room="admin-cctv")
+            
         logger.info(f"[SOCKET] User connected: {user_id} (SID: {sid})")
     except Exception as e:
         logger.warning(f"[SOCKET] Connection rejected: {str(e)}")
@@ -80,6 +94,16 @@ async def disconnect(sid):
         session = await sio.get_session(sid)
         user = session.get("user", {})
         user_id = user.get("id")
+        role = user.get("role", "UNKNOWN")
+        
+        if role != "ADMIN":
+            # Broadcast user disconnection to CCTV room
+            await sio.emit("user_disconnected", {
+                "userId": user_id,
+                "role": role,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }, room="admin-cctv")
+            
         logger.info(f"[SOCKET] User disconnected: {user_id} (SID: {sid})")
     except Exception as e:
         logger.error(f"[SOCKET] Disconnect error: {str(e)}")
@@ -96,9 +120,19 @@ class SocketService:
     async def broadcast_to_tracking(self, data: Any) -> bool:
         try:
             await sio.emit("live_location_update", data, room="live-tracking")
+            # Also emit to CCTV room
+            await sio.emit("live_location_update", data, room="admin-cctv")
             return True
         except Exception as e:
             logger.error(f"[SOCKET] Broadcast to tracking failed: {str(e)}")
+            return False
+
+    async def broadcast_activity(self, data: Any) -> bool:
+        try:
+            await sio.emit("activity_logged", data, room="admin-cctv")
+            return True
+        except Exception as e:
+            logger.error(f"[SOCKET] Broadcast activity failed: {str(e)}")
             return False
 
 socket_service = SocketService()

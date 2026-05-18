@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import connect_db
 from app.services.socket import socket_app
+from app.config import settings
+from app.logger import logger
 
 # Import all routers
 from app.routers import (
@@ -42,14 +44,24 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# Set up CORS origins
+origins = [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled server error on {request.method} {request.url.path}: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
 
 # Mount Socket.IO app at /socket.io
 app.mount("/socket.io", socket_app)

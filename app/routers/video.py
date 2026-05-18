@@ -6,6 +6,7 @@ from bson import ObjectId
 from app.config import settings
 from app.utils.zego_token import generate_token04
 from app.database import db
+from app.logger import logger
 
 router = APIRouter(prefix="/api/video", tags=["Video Calling"])
 
@@ -77,6 +78,6 @@ async def zegocloud_webhook(request: Request, timestamp: str = "", nonce: str = 
                     {"$set": {"status": "COMPLETED"}}
                 )
         except Exception as e:
-            print(f"[ZEGO Webhook] Error updating booking status: {e}")
+            logger.error(f"ZEGO Webhook Error updating booking status: {e}", exc_info=True)
             
-    return {"success": True, "message": "Webhook processed successfully"}
+    return {"code": 0, "message": "success"}

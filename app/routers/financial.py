@@ -76,8 +76,12 @@ async def get_earnings(current_user: Dict[str, Any] = Depends(get_current_user))
             },
             "withdrawals": withdrawals
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/withdraw", status_code=status.HTTP_201_CREATED)
 async def withdraw(payload: RequestWithdrawalRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -137,8 +141,12 @@ async def withdraw(payload: RequestWithdrawalRequest, current_user: Dict[str, An
         return {"success": True, "withdrawal": withdrawal_doc}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/simulate-payment")
 async def simulate_payment(payload: SimulatePaymentRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -149,5 +157,10 @@ async def simulate_payment(payload: SimulatePaymentRequest, current_user: Dict[s
             "message": "Payment split processed successfully",
             "paymentRecord": payment_record
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

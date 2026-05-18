@@ -52,8 +52,12 @@ async def get_tasks(current_user: Dict[str, Any] = Depends(get_current_user)):
                 b["created_at"] = b["created_at"].isoformat()
 
         return {"success": True, "tasks": tasks}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.put("/{id}")
 async def update_task_status(id: str, payload: UpdateTaskStatusRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -74,5 +78,10 @@ async def update_task_status(id: str, payload: UpdateTaskStatusRequest, current_
         return {"success": True, "task": task}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

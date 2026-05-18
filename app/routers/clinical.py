@@ -69,8 +69,12 @@ async def create_prescription(payload: CreatePrescriptionRequest, current_user: 
         return {"success": True, "prescription": prescription_doc}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/prescription/pdf/{id}")
 async def get_prescription_pdf_endpoint(id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -119,8 +123,12 @@ async def get_prescription_pdf_endpoint(id: str, current_user: Dict[str, Any] = 
         )
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/visit-report", status_code=status.HTTP_201_CREATED)
 async def create_visit_report(payload: CreateVisitReportRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -157,8 +165,12 @@ async def create_visit_report(payload: CreateVisitReportRequest, current_user: D
         return {"success": True, "report": report_doc}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/visit-report/pdf/{id}")
 async def get_visit_report_pdf_endpoint(id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -187,5 +199,10 @@ async def get_visit_report_pdf_endpoint(id: str, current_user: Dict[str, Any] = 
         )
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

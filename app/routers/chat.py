@@ -23,16 +23,24 @@ async def get_recent(current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         chats = await chat_service.get_recent_chats(current_user["id"])
         return {"success": True, "data": chats}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/history/{partnerId}")
 async def get_history(partnerId: str, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         history = await chat_service.get_history(current_user["id"], partnerId)
         return {"success": True, "data": history}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/send", status_code=status.HTTP_201_CREATED)
 async def send_msg(payload: SendMessageRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -48,8 +56,12 @@ async def send_msg(payload: SendMessageRequest, current_user: Dict[str, Any] = D
             attachments=attachments_data
         )
         return {"success": True, "data": message}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/token")
 async def get_cometchat_token(current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -78,5 +90,10 @@ async def get_cometchat_token(current_user: Dict[str, Any] = Depends(get_current
             status_code=exc.response.status_code,
             detail=f"CometChat API Error: {exc.response.text}"
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

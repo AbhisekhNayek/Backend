@@ -35,8 +35,12 @@ async def get_banners(admin: Dict[str, Any] = Depends(admin_only)):
             if b.get("created_at"):
                 b["created_at"] = b["created_at"].isoformat()
         return {"success": True, "data": banners}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/banners", status_code=status.HTTP_201_CREATED)
 async def create_banner(payload: BannerRequest, admin: Dict[str, Any] = Depends(admin_only)):
@@ -47,8 +51,12 @@ async def create_banner(payload: BannerRequest, admin: Dict[str, Any] = Depends(
         banner_doc["_id"] = str(banner_doc["_id"])
         banner_doc["created_at"] = banner_doc["created_at"].isoformat()
         return {"success": True, "data": banner_doc}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.delete("/banners/{id}")
 async def delete_banner(id: str, admin: Dict[str, Any] = Depends(admin_only)):
@@ -59,8 +67,12 @@ async def delete_banner(id: str, admin: Dict[str, Any] = Depends(admin_only)):
         return {"success": True, "message": "Banner deleted successfully"}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/config/{key}")
 async def get_config(key: str, admin: Dict[str, Any] = Depends(admin_only)):
@@ -73,8 +85,12 @@ async def get_config(key: str, admin: Dict[str, Any] = Depends(admin_only)):
             if config.get("updated_at"):
                 config["updated_at"] = config["updated_at"].isoformat()
         return {"success": True, "data": config}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/config")
 async def update_config(payload: ConfigRequest, admin: Dict[str, Any] = Depends(admin_only)):
@@ -94,8 +110,12 @@ async def update_config(payload: ConfigRequest, admin: Dict[str, Any] = Depends(
         if config.get("updated_at"):
             config["updated_at"] = config["updated_at"].isoformat()
         return {"success": True, "data": config}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/announcements")
 async def get_announcements(admin: Dict[str, Any] = Depends(admin_only)):
@@ -119,8 +139,12 @@ async def get_announcements(admin: Dict[str, Any] = Depends(admin_only)):
                 a["expiresAt"] = a["expiresAt"].isoformat()
 
         return {"success": True, "data": announcements}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/announcements", status_code=status.HTTP_201_CREATED)
 async def create_announcement(payload: AnnouncementRequest, admin: Dict[str, Any] = Depends(admin_only)):
@@ -143,5 +167,10 @@ async def create_announcement(payload: AnnouncementRequest, admin: Dict[str, Any
         return {"success": True, "data": ann_doc}
     except HTTPException as he:
         raise he
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

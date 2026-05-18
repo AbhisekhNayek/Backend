@@ -7,6 +7,7 @@ import math
 import uuid
 
 from app.services.doctor import doctor_service
+from app.services.tracking import tracking_service
 from app.middlewares.auth import get_current_user, role_required
 from app.utils.jwt import create_access_token
 from app.database import db
@@ -64,6 +65,15 @@ async def login(payload: DoctorLoginRequest):
             "role": doctor.get("role", "DOCTOR"),
             "username": doctor["username"]
         })
+        
+        # Log activity
+        await tracking_service.log_activity(
+            user_id=doctor["_id"],
+            role=doctor.get("role", "DOCTOR"),
+            action="LOGIN",
+            details="Doctor logged in"
+        )
+
         return {
             "success": True,
             "token": token,
@@ -125,8 +135,12 @@ async def get_all_doctors(
             "count": len(populated_docs),
             "doctors": populated_docs
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/{id}")
 async def get_doctor_by_id(id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -138,8 +152,12 @@ async def get_doctor_by_id(id: str, current_user: Dict[str, Any] = Depends(get_c
         }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.put("/{id}")
 async def update_profile(
@@ -160,8 +178,12 @@ async def update_profile(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/availability")
 async def update_availability(
@@ -195,14 +217,27 @@ async def update_availability(
         if updated.get("updatedAt"):
             updated["updatedAt"] = updated["updatedAt"].isoformat()
 
+        # Log activity
+        status_text = "ONLINE" if payload.isOnline == 1 else "OFFLINE"
+        await tracking_service.log_activity(
+            user_id=doctor_id,
+            role=updated.get("role", "DOCTOR"),
+            action="AVAILABILITY_CHANGED",
+            details=f"Doctor changed status to {status_text}"
+        )
+
         return {
             "success": True,
             "message": "Availability updated successfully",
             "isOnline": updated["isOnline"],
             "clinicHours": updated.get("clinicHours", [])
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.post("/incoming-call")
 async def initiate_incoming_call(
@@ -253,6 +288,14 @@ async def initiate_incoming_call(
             }
         )
         
+        # Log activity
+        await tracking_service.log_activity(
+            user_id=current_user.get("userId", current_user.get("id")),
+            role=current_user.get("role", "DOCTOR"),
+            action="INCOMING_CALL",
+            details=f"Initiated call for booking {payload.bookingId}"
+        )
+        
         return {
             "success": True,
             "message": "Consultation call initiated. Ringing patient...",
@@ -265,5 +308,10 @@ async def initiate_incoming_call(
             "appSign": settings.zego_app_sign,
             "token": token_info.token
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+

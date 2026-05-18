@@ -31,8 +31,12 @@ async def get_all_care_packages(admin: Dict[str, Any] = Depends(admin_only)):
             "count": len(packages),
             "data": packages
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.patch("/care-packages/{id}/ship")
 async def ship_care_package(
@@ -59,8 +63,12 @@ async def ship_care_package(
             "success": True,
             "message": "Care package status updated to SHIPPED successfully"
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
 
 @router.get("/commissions")
 async def get_commission_dashboard(admin: Dict[str, Any] = Depends(admin_only)):
@@ -83,5 +91,10 @@ async def get_commission_dashboard(admin: Dict[str, Any] = Depends(admin_only)):
                 "transactionCount": len(payments)
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+
