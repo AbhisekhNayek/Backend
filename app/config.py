@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
+    gemini_api_key: Optional[str] = None
 
     # Pydantic settings config to load .env variables
     model_config = SettingsConfigDict(
