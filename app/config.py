@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     aws_secret_access_key: str
     aws_region: str
     aws_s3_bucket: str
+    
+    razorpay_key_id: Optional[str] = None
+    razorpay_key_secret: Optional[str] = None
 
     # Pydantic settings config to load .env variables
     model_config = SettingsConfigDict(
