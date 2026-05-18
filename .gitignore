@@ -73,3 +73,19 @@ temp/
 *.swp
 *.swo
 *.bak
+
+# ================================
+# Python
+# ================================
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
