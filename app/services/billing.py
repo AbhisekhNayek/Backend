@@ -6,7 +6,8 @@ from app.database import db
 
 class BillingService:
     def calculate_split(self, total_amount: float) -> Dict[str, float]:
-        platform_fee = round(total_amount * 0.10, 2)
+        # Commission Manager: Payment Gateway splits money (Doctor gets 100% currently, minus ₹1 platform fee).
+        platform_fee = 1.00 if total_amount >= 1.00 else 0.00
         provider_amount = round(total_amount - platform_fee, 2)
         return {
             "platformFee": platform_fee,

@@ -20,6 +20,11 @@ from app.routers import (
     system,
     tasks,
     analytics,
+    quick_fill,
+    ai,
+    womens_health,
+    nurses,
+    admin_dashboard,
 )
 
 @asynccontextmanager
@@ -61,6 +66,11 @@ app.include_router(verification.router)
 app.include_router(system.router)
 app.include_router(tasks.router)
 app.include_router(analytics.router)
+app.include_router(quick_fill.router)
+app.include_router(ai.router)
+app.include_router(womens_health.router)
+app.include_router(nurses.router)
+app.include_router(admin_dashboard.router)
 
 # 404 Fallback to mimic Express exactly
 @app.exception_handler(404)
