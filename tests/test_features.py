@@ -243,6 +243,21 @@ async def override_admin_only():
 
 @pytest.fixture(autouse=True)
 def setup_dependency_overrides():
+    # Force reset db in all modules to this file's mock_db to avoid cross-test-file bleeding
+    import app.services.auth
+    app.database.db = mock_db
+    app.services.doctor.db = mock_db
+    app.services.billing.db = mock_db
+    app.routers.ai.db = mock_db
+    app.routers.nurses.db = mock_db
+    app.routers.womens_health.db = mock_db
+    app.routers.admin_dashboard.db = mock_db
+    app.routers.doctors.db = mock_db
+    app.routers.quick_fill.db = mock_db
+    app.services.tracking.db = mock_db
+    app.routers.tracking.db = mock_db
+    app.services.auth.db = mock_db
+
     # By default mock standard patient auth
     fastapi_app.dependency_overrides[get_current_user] = override_get_current_user
     fastapi_app.dependency_overrides[admin_only] = override_admin_only

@@ -117,6 +117,42 @@ async def update_config(payload: ConfigRequest, admin: Dict[str, Any] = Depends(
         logger.error(f'Unhandled error: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail='Internal Server Error')
 
+@router.get("/config")
+async def get_all_config(admin: Dict[str, Any] = Depends(admin_only)):
+    try:
+        cursor = db.system_configs.find()
+        configs = await cursor.to_list(length=1000)
+        config_dict = {}
+        for c in configs:
+            config_dict[c["key"]] = c["value"]
+        return {"success": True, "config": config_dict}
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+
+@router.put("/config")
+async def update_all_config(payload: Dict[str, Any], admin: Dict[str, Any] = Depends(admin_only)):
+    try:
+        for k, v in payload.items():
+            await db.system_configs.find_one_and_update(
+                {"key": k},
+                {"$set": {
+                    "value": v,
+                    "updated_at": datetime.now(timezone.utc)
+                }},
+                upsert=True
+            )
+        return {"success": True, "message": "Configuration updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.logger import logger
+        logger.error(f'Unhandled error: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail='Internal Server Error')
+
 @router.get("/announcements")
 async def get_announcements(admin: Dict[str, Any] = Depends(admin_only)):
     try:
