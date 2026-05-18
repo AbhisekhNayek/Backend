@@ -30,7 +30,30 @@ class UserService:
 
         existing = await db.users.find_one({"email": email})
         if existing:
-            raise ValueError("User already exists")
+            if existing.get("isEmailVerified", False):
+                raise ValueError("User already exists")
+            
+            # Update the registration details for the unverified user
+            salt = bcrypt.gensalt(10)
+            hashed_password = bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+            
+            await db.users.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {
+                    "name": name,
+                    "phone": phone,
+                    "password": hashed_password,
+                    "gender": gender,
+                    "dob": dob,
+                    "updatedAt": datetime.now(timezone.utc)
+                }}
+            )
+            
+            otp = generate_otp()
+            await save_otp(email, otp, is_email=True)
+            await send_email(email, "Verify Your Email", otp, name)
+            
+            return {"success": True, "message": "User registration details updated. OTP sent to email."}
 
         # Hash password
         salt = bcrypt.gensalt(10)
@@ -80,7 +103,29 @@ class UserService:
         await db.users.update_one({"email": email}, {"$set": {"isEmailVerified": True}})
         await db.otps.delete_one({"_id": record["_id"]})
 
-        return {"success": True, "message": "Email verified successfully"}
+        user = await db.users.find_one({"email": email})
+        if not user:
+            raise ValueError("User not found")
+
+        token = create_access_token({"id": str(user["_id"]), "role": user.get("role", "PATIENT")})
+
+        # Exclude password and format datetime objects for JSON serialization
+        user_data = dict(user)
+        user_data["_id"] = str(user_data["_id"])
+        user_data["id"] = user_data["_id"]
+        if "password" in user_data:
+            del user_data["password"]
+            
+        for key in ["dob", "createdAt", "updatedAt", "lastLoginAt"]:
+            if isinstance(user_data.get(key), datetime):
+                user_data[key] = user_data[key].isoformat()
+
+        return {
+            "success": True,
+            "message": "Email verified successfully",
+            "token": token,
+            "user": user_data
+        }
 
     async def login(self, email: str, password: str) -> Dict[str, Any]:
         user = await db.users.find_one({"email": email})
@@ -98,7 +143,23 @@ class UserService:
             {"$set": {"lastLoginAt": datetime.now(timezone.utc)}}
         )
 
-        return {"success": True, "token": token}
+        # Retrieve the updated user data
+        updated_user = await db.users.find_one({"_id": user["_id"]})
+        user_data = dict(updated_user)
+        user_data["_id"] = str(user_data["_id"])
+        user_data["id"] = user_data["_id"]
+        if "password" in user_data:
+            del user_data["password"]
+
+        for key in ["dob", "createdAt", "updatedAt", "lastLoginAt"]:
+            if isinstance(user_data.get(key), datetime):
+                user_data[key] = user_data[key].isoformat()
+
+        return {
+            "success": True,
+            "token": token,
+            "user": user_data
+        }
 
     async def get_profile(self, user_id: str) -> Dict[str, Any]:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
