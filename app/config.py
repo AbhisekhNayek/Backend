@@ -23,9 +23,14 @@ class Settings(BaseSettings):
     razorpay_key_secret: Optional[str] = None
     gemini_api_key: Optional[str] = None
     
-    zego_app_id: Optional[int] = None
-    zego_app_sign: Optional[str] = None
-    zego_callback_secret: Optional[str] = None
+    zego_app_id: int
+    zego_app_sign: str
+    zego_callback_secret: str
+    
+    cometchat_app_id: str
+    cometchat_auth_key: str
+    cometchat_rest_api_key: str
+    cometchat_region: str = "in"
 
     # Pydantic settings config to load .env variables
     model_config = SettingsConfigDict(
