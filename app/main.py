@@ -25,6 +25,7 @@ from app.routers import (
     womens_health,
     nurses,
     admin_dashboard,
+    video,
 )
 
 @asynccontextmanager
@@ -71,6 +72,7 @@ app.include_router(ai.router)
 app.include_router(womens_health.router)
 app.include_router(nurses.router)
 app.include_router(admin_dashboard.router)
+app.include_router(video.router)
 
 # 404 Fallback to mimic Express exactly
 @app.exception_handler(404)

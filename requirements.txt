@@ -13,4 +13,4 @@ aiosmtplib>=3.0.1
 python-socketio[asyncio]>=5.11.0
 email-validator>=2.0.0
 google-generativeai>=0.8.6
-
+pycryptodome>=3.20.0

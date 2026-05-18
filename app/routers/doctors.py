@@ -10,6 +10,10 @@ from app.services.doctor import doctor_service
 from app.middlewares.auth import get_current_user, role_required
 from app.utils.jwt import create_access_token
 from app.database import db
+from app.services.socket import socket_service
+from app.config import settings
+from app.utils.zego_token import generate_token04
+import json
 
 router = APIRouter(prefix="/api/doctors", tags=["Doctors"])
 
@@ -206,9 +210,49 @@ async def initiate_incoming_call(
     current_user: Dict[str, Any] = Depends(role_required(["DOCTOR", "NURSE"]))
 ):
     try:
-        call_id = f"CALL-{uuid.uuid4().hex[:8].upper()}"
+        call_id = payload.bookingId
         
-        # Trigger mock dynamic ringing screen
+        # 1. Generate Token for the Doctor
+        token_payload = {
+            "room_id": payload.bookingId,
+            "privilege": {1: 1, 2: 1},
+            "stream_id_list": None
+        }
+        
+        token_info = generate_token04(
+            app_id=settings.zego_app_id,
+            user_id=current_user["userId"],
+            secret=settings.zego_callback_secret,
+            effective_time_in_seconds=3600,
+            payload=json.dumps(token_payload)
+        )
+        
+        if token_info.error_code != 0:
+            raise HTTPException(status_code=500, detail="Failed to generate video token")
+            
+        # 2. Extract Doctor info to send to Patient
+        doctor_doc = await db.doctors.find_one({"userId": ObjectId(current_user["userId"])})
+        if not doctor_doc:
+            # Fallback if no specific profile exists
+            caller_name = "Medical Professional"
+            caller_image = ""
+        else:
+            caller_name = doctor_doc.get("name", "Doctor")
+            caller_image = doctor_doc.get("profileImage", "")
+        
+        # 3. Emit Ring Signal to Patient
+        await socket_service.emit_to_user(
+            user_id=payload.patientId,
+            event="incoming_call",
+            data={
+                "callSessionId": call_id,
+                "bookingId": payload.bookingId,
+                "callerName": caller_name,
+                "callerImage": caller_image,
+                "roomId": payload.bookingId
+            }
+        )
+        
         return {
             "success": True,
             "message": "Consultation call initiated. Ringing patient...",
@@ -216,7 +260,10 @@ async def initiate_incoming_call(
             "bookingId": payload.bookingId,
             "patientId": payload.patientId,
             "ringtoneDurationSec": 30,
-            "ringing": True
+            "ringing": True,
+            "appId": settings.zego_app_id,
+            "appSign": settings.zego_app_sign,
+            "token": token_info.token
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
