@@ -50,8 +50,11 @@ async def connect(sid, environ, auth=None):
         await sio.enter_room(sid, f"user-{user_id}")
         await sio.enter_room(sid, "live-tracking")
         
-        # Check if Admin to join CCTV room
         role = payload.get("role", "UNKNOWN")
+        await sio.enter_room(sid, f"role-{role.upper()}")
+        await sio.enter_room(sid, "role-ALL")
+        
+        # Check if Admin to join CCTV room
         if role == "ADMIN":
             await sio.enter_room(sid, "admin-cctv")
             logger.info(f"[SOCKET] Admin connected to CCTV room: {user_id} (SID: {sid})")
@@ -133,6 +136,23 @@ class SocketService:
             return True
         except Exception as e:
             logger.error(f"[SOCKET] Broadcast activity failed: {str(e)}")
+            return False
+
+    async def broadcast_to_role(self, role: str, event: str, data: Any) -> bool:
+        try:
+            room_name = f"role-{role.upper()}"
+            await sio.emit(event, data, room=room_name)
+            return True
+        except Exception as e:
+            logger.error(f"[SOCKET] Broadcast to role {role} failed: {str(e)}")
+            return False
+
+    async def broadcast_to_all(self, event: str, data: Any) -> bool:
+        try:
+            await sio.emit(event, data)
+            return True
+        except Exception as e:
+            logger.error(f"[SOCKET] Global broadcast failed: {str(e)}")
             return False
 
 socket_service = SocketService()

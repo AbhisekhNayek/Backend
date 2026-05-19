@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status, UploadFile, File
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from bson import ObjectId
 
 from app.services.user import user_service
 from app.services.tracking import tracking_service
+from app.services.storage import storage_service
 from app.middlewares.auth import get_current_user, admin_only
 from app.database import db
 
@@ -108,4 +110,69 @@ async def get_all_users(
         from app.logger import logger
         logger.error(f'Unhandled error: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail='Internal Server Error')
+
+@router.post("/profile-pic")
+async def upload_profile_pic(
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    try:
+        content = await file.read()
+        image_url = storage_service.upload_file(
+            file_content=content,
+            original_filename=file.filename,
+            mimetype=file.content_type or "image/jpeg",
+            folder="profile_pics"
+        )
+        
+        role_upper = current_user.get("role", "").upper()
+        user_id = current_user.get("id")
+        
+        if role_upper in ["USER", "PATIENT"]:
+            res = await db.users.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"profilePic": image_url, "updatedAt": datetime.now(timezone.utc)}},
+                return_document=True
+            )
+            if not res:
+                raise HTTPException(status_code=404, detail="User not found")
+        elif role_upper == "DOCTOR":
+            res = await db.doctors.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"profileImage": image_url, "updatedAt": datetime.now(timezone.utc)}},
+                return_document=True
+            )
+            if not res:
+                raise HTTPException(status_code=404, detail="Doctor not found")
+        elif role_upper == "NURSE":
+            res = await db.nurses.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"profileImage": image_url, "created_at": datetime.now(timezone.utc)}}, # reuse/keep standard
+                return_document=True
+            )
+            if not res:
+                raise HTTPException(status_code=404, detail="Nurse not found")
+        elif role_upper == "ADMIN":
+            res = await db.admins.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"profileImage": image_url}},
+                return_document=True
+            )
+            if not res:
+                raise HTTPException(status_code=404, detail="Admin not found")
+        else:
+            raise HTTPException(status_code=400, detail="Invalid role for profile picture upload")
+            
+        return {
+            "success": True,
+            "message": "Profile picture uploaded successfully",
+            "profilePic": image_url
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.logger import logger
+        logger.error(f"Profile picture upload error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 

@@ -17,6 +17,7 @@ class Nurse(MongoBaseModel):
     password: str
     isFirstLogin: int = Field(default=1, description="0=No, 1=Yes")
     name: Optional[str] = Field(default=None, max_length=50)
+    profileImage: Optional[str] = None
     skills: Optional[str] = Field(default=None, max_length=200)
     experience: Optional[int] = Field(default=0, ge=0)
     rates: NurseRates = Field(default_factory=NurseRates)
